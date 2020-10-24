@@ -42,7 +42,8 @@ def id_to_cls(data_dir):
     id_to_class = dict()
     for line in lines:
         words = line.split('\t')
-        id_to_class[words[0]] = words[1].split(',')[0]
+        name = '/'.join(words[1].split(','))
+        id_to_class[words[0]] = name.strip()
     f.close()
     return id_to_class
 
@@ -51,9 +52,8 @@ def get_ds_loader(data_dir, train_bs=16, test_bs=8):
     if not os.path.exists(data_dir):
         raise OSError("Directory doesn't exist")
 
-    ds_dir = os.path.join(data_dir, 'tiny-imagenet-200')
-    train_dir = os.path.join(ds_dir, 'train')
-    val_dir = os.path.join(ds_dir, 'val')
+    train_dir = os.path.join(data_dir, 'train')
+    val_dir = os.path.join(data_dir, 'val')
 
     norm = transforms.Normalize(mean=[0.5, 0.5, 0.5],
                                 std=[0.5, 0.5, 0.5])
@@ -72,7 +72,7 @@ def get_ds_loader(data_dir, train_bs=16, test_bs=8):
     train_ds = datasets.ImageFolder(train_dir, transform=train_tf)
     val_ds = datasets.ImageFolder(val_dir, transform=val_tf)
 
-    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=train_ds,
+    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=train_bs,
                                                shuffle=True, num_workers=1,
                                                pin_memory=True)
 
