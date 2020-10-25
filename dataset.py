@@ -11,6 +11,7 @@ def create_val_dir_struct(data_dir):
 
     val_dir = os.path.join(data_dir, 'val')
     img_dir = os.path.join(val_dir, 'images')
+    tgt_dir = os.path.join(val_dir, 'tgt')
     annot_txt = os.path.join(val_dir, 'val_annotations.txt')
 
     f = open(annot_txt, 'r')
@@ -22,8 +23,11 @@ def create_val_dir_struct(data_dir):
         img_dict[words[0]] = words[1]
     f.close()
 
+    if not os.path.exists(tgt_dir):
+        os.makedirs(tgt_dir)
+
     for key, val in img_dict.items():
-        new_dir = os.path.join(val_dir, val)
+        new_dir = os.path.join(tgt_dir, val)
         if not os.path.exists(new_dir):
             os.makedirs(new_dir)
         img_path = os.path.join(img_dir, key)
@@ -54,9 +58,10 @@ def get_ds_loader(data_dir, train_bs=16, test_bs=8):
 
     train_dir = os.path.join(data_dir, 'train')
     val_dir = os.path.join(data_dir, 'val')
+    tgt_dir = os.path.join(val_dir, 'tgt')
 
-    norm = transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                                std=[0.5, 0.5, 0.5])
+    norm = transforms.Normalize(mean=[0.4802, 0.4481, 0.3975],
+                                std=[0.2302, 0.2265, 0.2262])
 
     train_tf = transforms.Compose([
         transforms.RandomHorizontalFlip(),
@@ -70,7 +75,7 @@ def get_ds_loader(data_dir, train_bs=16, test_bs=8):
     ])
 
     train_ds = datasets.ImageFolder(train_dir, transform=train_tf)
-    val_ds = datasets.ImageFolder(val_dir, transform=val_tf)
+    val_ds = datasets.ImageFolder(tgt_dir, transform=val_tf)
 
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=train_bs,
                                                shuffle=True, num_workers=1,
