@@ -60,8 +60,9 @@ class ImgPatches(nn.Module):
 
     def forward(self, img):
         b, c, h, w = img.shape
-        patches = img.unfold(2, self.patch_size,
-                             self.patch_size).unfold(3, self.patch_size,
+        img = img.permute(0, 2, 3, 1)
+        patches = img.unfold(1, self.patch_size,
+                             self.patch_size).unfold(2, self.patch_size,
                                                      self.patch_size)
         patches = patches.reshape(b, -1, c * self.patch_size * self.patch_size)
         return patches
