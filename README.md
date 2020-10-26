@@ -3,6 +3,22 @@ Pytorch Implementation of <a href="https://openreview.net/pdf?id=YicbFdNTTy">Vis
 
 <img src="/img/vit.png" width="500px"></img>
 
+Image patches are generated as:
+
+```python
+b, c, h, w = img.shape
+img = img.permute(0, 2, 3, 1)
+patches = img.unfold(1, patch_size, patch_size).unfold(2, patch_size, patch_size)
+patches = patches.reshape(b, -1, c * patch_size * patch_size)
+```
+
+#### Image:
+<img src="/img/img.png" width="500px"></img>
+
+#### Patches:
+<img src="/img/patches.png" width="500px"></img>
+
+
 ## Usage
 
 ```python
