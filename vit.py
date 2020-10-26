@@ -109,11 +109,13 @@ class ViT(nn.Module):
 
         # Image patches and embedding layer
         self.patches = ImgPatches(self.patch_size)
-        self.patch_embed = nn.Linear(patch_dim, embed_dim)
+        self.patch_embed = nn.Linear(int(patch_dim), int(embed_dim))
 
         # Embedding for patch position and class
         self.pos_emb = nn.Parameter(torch.zeros(1, num_patches+1, embed_dim))
         self.cls_emb = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        nn.init.trunc_normal_(self.pos_emb, std=0.2)
+        nn.init.trunc_normal_(self.cls_emb, std=0.2)
 
         self.transfomer = Transformer(depth, embed_dim, num_heads,
                                       mlp_ratio, drop_rate)
@@ -122,6 +124,16 @@ class ViT(nn.Module):
             self.out = MLP(embed_dim, embed_dim*mlp_ratio, num_classes)
         else:
             self.out = nn.Linear(embed_dim, num_classes)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.trunc_normal_(m.weight, std=.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
 
     def forward(self, x, mask=None):
         b = x.shape[0]
