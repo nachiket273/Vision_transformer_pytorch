@@ -35,16 +35,12 @@ class Attention(nn.Module):
             nn.Dropout(proj_dropout)
         )
 
-    def forward(self, x, mask=None):
+    def forward(self, x):
         b, n, c = x.shape
         qkv = self.qkv(x).reshape(b, n, 3, self.num_heads, c//self.num_heads)
         q, k, v = qkv.permute(2, 0, 3, 1, 4)
+
         dot = (q @ k.transpose(-2, -1)) * self.scale
-
-        # TO-DO: APPLY MASK
-        if mask is not None:
-            print("Mask is yet to be implemented.")
-
         attn = dot.softmax(dim=-1)
         attn = self.attn_dropout(attn)
 
@@ -54,17 +50,13 @@ class Attention(nn.Module):
 
 
 class ImgPatches(nn.Module):
-    def __init__(self, patch_size=16):
+    def __init__(self, in_ch=3, embed_dim=768, patch_size=16):
         super().__init__()
-        self.patch_size = patch_size
+        self.patch_embed = nn.Conv2d(in_ch, embed_dim,
+                                     kernel_size=patch_size, stride=patch_size)
 
     def forward(self, img):
-        b, c, h, w = img.shape
-        img = img.permute(0, 2, 3, 1)
-        patches = img.unfold(1, self.patch_size,
-                             self.patch_size).unfold(2, self.patch_size,
-                                                     self.patch_size)
-        patches = patches.reshape(b, -1, c * self.patch_size * self.patch_size)
+        patches = self.patch_embed(img).flatten(2).transpose(1, 2)
         return patches
 
 
@@ -76,9 +68,9 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(dim)
         self.mlp = MLP(dim, dim*mlp_ratio, dropout=drop_rate)
 
-    def forward(self, x, mask):
+    def forward(self, x):
         x1 = self.ln1(x)
-        x = x + self.attn(x1, mask)
+        x = x + self.attn(x1)
         x2 = self.ln2(x)
         x = x + self.mlp(x2)
         return x
@@ -91,26 +83,24 @@ class Transformer(nn.Module):
             Block(dim, num_heads, mlp_ratio, drop_rate)
             for i in range(depth)])
 
-    def forward(self, x, mask):
+    def forward(self, x):
         for block in self.blocks:
-            x = block(x, mask)
+            x = block(x)
         return x
 
 
 class ViT(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_ch=3, num_classes=1000,
-                 use_mlp=True, embed_dim=768, depth=12, num_heads=12,
-                 mlp_ratio=4, drop_rate=0.):
+                 embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
+                 drop_rate=0.):
         super().__init__()
         if img_size % patch_size != 0:
             raise ValueError('Image size must be divisible by patch size.')
         num_patches = (img_size//patch_size) ** 2
-        patch_dim = in_ch * patch_size * patch_size
         self.patch_size = patch_size
 
         # Image patches and embedding layer
-        self.patches = ImgPatches(self.patch_size)
-        self.patch_embed = nn.Linear(int(patch_dim), int(embed_dim))
+        self.patches = ImgPatches(in_ch, embed_dim, self.patch_size)
 
         # Embedding for patch position and class
         self.pos_emb = nn.Parameter(torch.zeros(1, num_patches+1, embed_dim))
@@ -118,13 +108,11 @@ class ViT(nn.Module):
         nn.init.trunc_normal_(self.pos_emb, std=0.2)
         nn.init.trunc_normal_(self.cls_emb, std=0.2)
 
+        self.drop = nn.Dropout(p=drop_rate)
         self.transfomer = Transformer(depth, embed_dim, num_heads,
                                       mlp_ratio, drop_rate)
         self.norm = nn.LayerNorm(embed_dim)
-        if use_mlp:
-            self.out = MLP(embed_dim, embed_dim*mlp_ratio, num_classes)
-        else:
-            self.out = nn.Linear(embed_dim, num_classes)
+        self.out = nn.Linear(embed_dim, num_classes)
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
@@ -136,15 +124,15 @@ class ViT(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, x, mask=None):
+    def forward(self, x):
         b = x.shape[0]
         cls_token = self.cls_emb.expand(b, -1, -1)
 
-        x = self.patch_embed(self.patches(x))
+        x = self.patches(x)
         x = torch.cat((cls_token, x), dim=1)
         x += self.pos_emb
-
-        x = self.transfomer(x, mask)
-        x = self.norm(x[:, 0])
-        x = self.out(x)
+        x = self.drop(x)
+        x = self.transfomer(x)
+        x = self.norm(x)
+        x = self.out(x[:, 0])
         return x
