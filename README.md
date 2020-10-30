@@ -3,7 +3,6 @@ Pytorch Implementation of <a href="https://openreview.net/pdf?id=YicbFdNTTy">Vis
 
 <img src="/img/vit.png" width="500px"></img>
 
-
 ## Usage
 
 ```python
@@ -26,6 +25,11 @@ model = ViT(
 img = torch.randn(1, 3, 224, 224)
 pred = model(img)
 ```
+
+## Pretrained Weights
+
+* Used Imagenet-1k pretrained weights from https://github.com/rwightman/pytorch-image-models/
+* Updated checkpoint for this implementation and new weights can be found on <a href="https://drive.google.com/file/d/1xY9gk_KUoXfJkNiJ3L7W9xYWpngp4FHY/view?usp=sharing">drive</a> location.
 
 ## Citations
 
