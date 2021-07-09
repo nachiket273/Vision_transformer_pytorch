@@ -31,15 +31,14 @@ pred = model(img)
 * Used Imagenet-1k pretrained weights from https://github.com/rwightman/pytorch-image-models/
 * Updated checkpoint for this implementation and new weights can be found on <a href="https://drive.google.com/file/d/1xY9gk_KUoXfJkNiJ3L7W9xYWpngp4FHY/view?usp=sharing">drive</a> location.
 
+
 ## Citations
 
 ```bibtex
 @inproceedings{
-    anonymous2021an,
     title={An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale},
-    author={Anonymous},
-    booktitle={Submitted to International Conference on Learning Representations},
+    author={Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer,
+            Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby},
     year={2021},
-    url={https://openreview.net/forum?id=YicbFdNTTy},
-    note={under review}
+    url={https://arxiv.org/pdf/2010.11929.pdf}
 }
